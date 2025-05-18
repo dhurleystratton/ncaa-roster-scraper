@@ -78,6 +78,32 @@ def _slugs_for_sport(session: requests.Session, year: int, sport: str) -> List[s
     return _parse_slugs(resp.text, pattern)
 
 
+def get_team_slugs(sport: str, year: int) -> list[str]:
+    """Return team slugs for ``sport`` in ``year`` using index pages."""
+
+    if sport == "football":
+        url = f"https://www.sports-reference.com/cfb/years/{year}-team.html"
+    elif sport == "men":
+        url = f"https://www.sports-reference.com/cbb/seasons/{year}-school-stats.html"
+    elif sport == "women":
+        url = f"https://www.sports-reference.com/cbb/seasons/{year}-women-school-stats.html"
+    else:
+        raise ValueError("sport must be 'men', 'women', or 'football'")
+
+    tables = pd.read_html(url, attrs={"id": "schools"})
+    if not tables:
+        return []
+    df = tables[0]
+    links = (
+        df.iloc[:, 0]
+        .astype(str)
+        .str.extract(r'href="/[a-z]+/schools/([^/]+)/')[0]
+        .dropna()
+        .unique()
+    )
+    return links.tolist()
+
+
 def _fetch_roster_csv(
     session: requests.Session, year: int, sport: str, slug: str
 ) -> Optional[pd.DataFrame]:
