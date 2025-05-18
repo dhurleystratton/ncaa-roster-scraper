@@ -144,7 +144,7 @@ def fetch_rosters(seasons: Optional[Iterable[int]] = None) -> None:
 
     session = requests.Session()
 
-    rows = []
+    frames = []
     for year in seasons:
         season_name = _season_str(year)
         for sport in sports:
@@ -162,14 +162,17 @@ def fetch_rosters(seasons: Optional[Iterable[int]] = None) -> None:
                 df.insert(0, "school", slug)
                 df.insert(0, "sport", sport)
                 df.insert(0, "season", season_name)
-                rows.append(df)
-
-    if not rows:
-        master = pd.DataFrame(
+                frames.append(df)
+    if not frames:
+        print("No data scraped – writing empty CSV to avoid downstream errors")
+        out = Path("data/master_raw.csv")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(
             columns=["season", "sport", "school", "player", "position", "class"]
-        )
-    else:
-        master = pd.concat(rows, ignore_index=True)
+        ).to_csv(out, index=False)
+        return
+
+    master = pd.concat(frames, ignore_index=True)
 
     output = Path("data/master_raw.csv")
     output.parent.mkdir(parents=True, exist_ok=True)
