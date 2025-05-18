@@ -14,6 +14,8 @@ import time
 from pathlib import Path
 from typing import Iterable, List, Optional
 
+import urllib.error
+
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -90,7 +92,21 @@ def get_team_slugs(sport: str, year: int) -> list[str]:
     else:
         raise ValueError("sport must be 'men', 'women', or 'football'")
 
-    tables = pd.read_html(url, attrs={"id": "schools"})
+    delay = 1
+    for attempt in range(6):
+        try:
+            tables = pd.read_html(url, attrs={"id": "schools"})
+            break
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                if attempt == 5:
+                    return []
+                time.sleep(delay)
+                delay *= 2
+                continue
+            raise
+    else:
+        return []
     if not tables:
         return []
     df = tables[0]
