@@ -80,6 +80,13 @@ def _slugs_for_sport(session: requests.Session, year: int, sport: str) -> List[s
     return _parse_slugs(resp.text, pattern)
 
 
+def load_slugs(sport: str) -> pd.DataFrame:
+    """Return DataFrame of slug metadata for ``sport``."""
+
+    path = Path(f"data/slugs/{sport}_schools.csv")
+    return pd.read_csv(path)
+
+
 def get_team_slugs(sport: str, year: int) -> list[str]:
     """Return team slugs for ``sport`` in ``year`` using index pages."""
 
@@ -171,52 +178,64 @@ def _fetch_roster_csv(
 
 
 def fetch_rosters(seasons: Optional[Iterable[int]] = None) -> None:
-    """Scrape rosters and save them to ``data/master_raw.csv``.
+    """Scrape rosters using local slug tables.
 
     Parameters
     ----------
     seasons : Iterable[int], optional
-        Specific ending years of seasons to scrape. If ``None`` (default),
-        seasons 2016-17 through 2020-21 are scraped.
+        List of seasons to scrape. Defaults to 2016 through 2021 inclusive.
     """
 
     if seasons is None:
-        seasons = list(range(2017, 2022))
+        seasons = range(2016, 2022)
+
     sports = ["men", "women", "football"]
+    frames: list[pd.DataFrame] = []
 
-    session = requests.Session()
+    for sport in sports:
+        slug_df = load_slugs(sport)
+        for season in seasons:
+            for slug, school, conf in slug_df.itertuples(index=False):
+                if sport == "men":
+                    url = (
+                        f"https://www.sports-reference.com/cbb/schools/{slug}/{season}.html?output=csv"
+                    )
+                elif sport == "women":
+                    url = (
+                        f"https://www.sports-reference.com/cbb/schools/{slug}/{season}-women.html?output=csv"
+                    )
+                else:
+                    url = (
+                        f"https://www.sports-reference.com/cfb/schools/{slug}/{season}-roster.html?output=csv"
+                    )
 
-    frames = []
-    for year in seasons:
-        season_name = _season_str(year)
-        for sport in sports:
-            try:
-                slugs = _slugs_for_sport(session, year, sport)
-            except Exception:
-                continue
-
-            for slug in tqdm(slugs, desc=f"{sport}-{year}", unit="team"):
-                df = _fetch_roster_csv(session, year, sport, slug)
-                time.sleep(1)  # politeness
-                if df is None or df.empty:
+                try:
+                    df = pd.read_csv(url)
+                except Exception:
                     continue
 
-                df.insert(0, "school", slug)
-                df.insert(0, "sport", sport)
-                df.insert(0, "season", season_name)
+                df["season"] = season
+                df["sport"] = sport
+                df["school_slug"] = slug
+                df["school_name"] = school
+                df["conference"] = conf
                 frames.append(df)
-    if not frames:
-        print("No data scraped – writing empty CSV to avoid downstream errors")
-        out = Path("data/master_raw.csv")
-        out.parent.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame(
-            columns=["season", "sport", "school", "player", "position", "class"]
-        ).to_csv(out, index=False)
-        return
-
-    master = pd.concat(frames, ignore_index=True)
 
     output = Path("data/master_raw.csv")
     output.parent.mkdir(parents=True, exist_ok=True)
+
+    if frames:
+        master = pd.concat(frames, ignore_index=True)
+    else:
+        master = pd.DataFrame(
+            columns=[
+                "season",
+                "sport",
+                "school_slug",
+                "school_name",
+                "conference",
+            ]
+        )
+
     master.to_csv(output, index=False)
 

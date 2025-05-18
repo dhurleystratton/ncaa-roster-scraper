@@ -13,7 +13,7 @@ def main():
     if "school" in df.columns:
         df["school"] = df["school"].astype(str).str.strip().str.title()
 
-    subset = [col for col in ["player", "school", "season", "sport"] if col in df.columns]
+    subset = [col for col in ["player", "school", "season", "sport", "conference"] if col in df.columns]
     if subset:
         df = df.drop_duplicates(subset=subset)
 
