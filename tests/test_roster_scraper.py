@@ -1,3 +1,4 @@
+import pandas
 from scraper.sports_reference import fetch_rosters
 
 
@@ -6,3 +7,5 @@ def test_fetch_rosters(tmp_path, monkeypatch):
     fetch_rosters(seasons=[2019])
     csv = tmp_path / "data" / "master_raw.csv"
     assert csv.exists()
+    df = pandas.read_csv(csv)
+    assert "conference" in df.columns
