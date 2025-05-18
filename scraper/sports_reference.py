@@ -128,10 +128,18 @@ def _fetch_roster_csv(
     )
 
 
-def fetch_rosters() -> None:
-    """Scrape rosters and save them to ``data/master_raw.csv``."""
+def fetch_rosters(seasons: Optional[Iterable[int]] = None) -> None:
+    """Scrape rosters and save them to ``data/master_raw.csv``.
 
-    seasons = list(range(2017, 2022))
+    Parameters
+    ----------
+    seasons : Iterable[int], optional
+        Specific ending years of seasons to scrape. If ``None`` (default),
+        seasons 2016-17 through 2020-21 are scraped.
+    """
+
+    if seasons is None:
+        seasons = list(range(2017, 2022))
     sports = ["men", "women", "football"]
 
     session = requests.Session()
