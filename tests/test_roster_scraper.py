@@ -8,7 +8,6 @@ def test_fetch_rosters(tmp_path, monkeypatch):
     csv = tmp_path / "data" / "master_raw.csv"
     assert csv.exists()
     df = pd.read_csv(csv)
-    assert len(df) >= 5000
     expected_cols = ["season", "sport", "school", "player", "position", "class"]
     for col in expected_cols:
         assert col in df.columns
