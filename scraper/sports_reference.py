@@ -165,9 +165,11 @@ def fetch_rosters(seasons: Optional[Iterable[int]] = None) -> None:
                 rows.append(df)
 
     if not rows:
-        return
-
-    master = pd.concat(rows, ignore_index=True)
+        master = pd.DataFrame(
+            columns=["season", "sport", "school", "player", "position", "class"]
+        )
+    else:
+        master = pd.concat(rows, ignore_index=True)
 
     output = Path("data/master_raw.csv")
     output.parent.mkdir(parents=True, exist_ok=True)
