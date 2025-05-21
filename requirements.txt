@@ -1,6 +1,9 @@
-requests
-pandas
-tqdm
-beautifulsoup4
-pytest
-selenium
+requests==2.31.0
+pandas==2.2.2
+beautifulsoup4==4.12.3
+loguru==0.7.2
+python-dotenv==1.0.1
+tenacity==8.2.3
+pytest==7.4.4
+# Optional only if Postgres upsert is used:
+# psycopg2-binary==2.9.9
